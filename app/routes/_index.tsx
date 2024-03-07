@@ -1,41 +1,43 @@
-import type { MetaFunction } from "@remix-run/node";
-
-export const meta: MetaFunction = () => {
-  return [
-    { title: "New Remix App" },
-    { name: "description", content: "Welcome to Remix!" },
-  ];
-};
+import { useFetcher } from '@remix-run/react';
+import type { loader as apiLoader } from './api';
 
 export default function Index() {
+  const fetcher = useFetcher<typeof apiLoader>();
+
+  const isSubmittingQuery =
+    fetcher.state !== 'idle' && !!fetcher.formData?.get('q');
+
+  const hasResults =
+    fetcher.state === 'idle' && fetcher.data && fetcher.data.results.length > 0;
+
   return (
-    <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.8" }}>
-      <h1>Welcome to Remix</h1>
-      <ul>
-        <li>
-          <a
-            target="_blank"
-            href="https://remix.run/tutorials/blog"
-            rel="noreferrer"
-          >
-            15m Quickstart Blog Tutorial
-          </a>
-        </li>
-        <li>
-          <a
-            target="_blank"
-            href="https://remix.run/tutorials/jokes"
-            rel="noreferrer"
-          >
-            Deep Dive Jokes App Tutorial
-          </a>
-        </li>
-        <li>
-          <a target="_blank" href="https://remix.run/docs" rel="noreferrer">
-            Remix Docs
-          </a>
-        </li>
-      </ul>
+    <div className="w-full h-full flex justify-center">
+      <fieldset className="w-[500px] inline-flex flex-col gap-2 rounded border-slate-300 border border-solid shadow-xl p-4">
+        <legend>Search:</legend>
+        <div>
+          <input
+            className="w-full"
+            type="text"
+            name="value"
+            placeholder="Value"
+            onChange={(e) => {
+              fetcher.submit(
+                { q: e.target.value },
+                { action: '/api', method: 'GET' }
+              );
+            }}
+          />
+        </div>
+        {isSubmittingQuery && <div className="text-cyan-500">Loading...</div>}
+        {hasResults && (
+          <ul className="max-h-[300px] overflow-y-scroll">
+            {hasResults &&
+              fetcher.data?.results.map(({ id, name }) => (
+                <li key={id}>{name}</li>
+              ))}
+          </ul>
+        )}
+      </fieldset>
     </div>
   );
 }
