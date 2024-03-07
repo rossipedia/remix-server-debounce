@@ -1,24 +1,11 @@
 import { faker } from '@faker-js/faker';
+
+import { setTimeout } from 'node:timers/promises';
 import { LoaderFunctionArgs, json } from '@remix-run/node';
-
-function delay(ms: number, signal?: AbortSignal) {
-  return new Promise((resolve) => {
-    const timeout = setTimeout(resolve, ms);
-    signal?.addEventListener('abort', () => {
-      clearTimeout(timeout);
-    });
-  });
-}
-
-type Person = { id: string; name: string };
-
-const users: Person[] = Array.from({ length: 100 }, () => ({
-  id: faker.string.uuid(),
-  name: faker.person.fullName(),
-}));
+import { ClientLoaderFunctionArgs } from '@remix-run/react';
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  await delay(500, request.signal);
+  await setTimeout(500, { signal: request.signal });
 
   const q = new URL(request.url).searchParams.get('q');
   console.log('------ returning results ------');
@@ -31,3 +18,34 @@ export async function loader({ request }: LoaderFunctionArgs) {
       : [],
   });
 }
+
+function wait(ms: number, signal?: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    const timeout = window.setTimeout(resolve, ms);
+    if (signal) {
+      signal.addEventListener('abort', (e) => {
+        clearTimeout(timeout);
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error
+        reject(e.target?.reason);
+      });
+    }
+  });
+}
+
+export async function clientLoader({
+  request,
+  serverLoader,
+}: ClientLoaderFunctionArgs) {
+  console.log('------ client loader ------');
+  await wait(500, request.signal);
+  console.log('------ server loader ------');
+  return await serverLoader();
+}
+
+type Person = { id: string; name: string };
+
+const users: Person[] = Array.from({ length: 100 }, () => ({
+  id: faker.string.uuid(),
+  name: faker.person.fullName(),
+}));
