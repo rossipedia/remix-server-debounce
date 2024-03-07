@@ -1,15 +1,10 @@
 import { faker } from '@faker-js/faker';
 
-import { setTimeout } from 'node:timers/promises';
 import { LoaderFunctionArgs, json } from '@remix-run/node';
 import { ClientLoaderFunctionArgs } from '@remix-run/react';
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  await setTimeout(500, { signal: request.signal });
-
   const q = new URL(request.url).searchParams.get('q');
-  console.log('------ returning results ------');
-
   return json({
     results: q
       ? users.filter((user) =>
